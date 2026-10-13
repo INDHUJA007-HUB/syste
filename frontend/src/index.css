@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0a0d14;
+    --bg-card: #111522;
+    --bg-surface: #181e30;
+    --accent-crimson: #e50914;
+    --accent-indigo: #6366f1;
+  }
+
+  body {
+    background-color: #0a0d14;
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Custom Sleek Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0d14;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #232b42;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #374151;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(17, 21, 34, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-nav {
+  background: rgba(10, 13, 20, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Shimmer animation for Skeleton Loaders */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.03) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+/* Hero vignette gradients */
+.hero-vignette {
+  background: linear-gradient(
+    0deg,
+    #0a0d14 0%,
+    rgba(10, 13, 20, 0.8) 25%,
+    rgba(10, 13, 20, 0.3) 60%,
+    rgba(10, 13, 20, 0.7) 100%
+  );
+}
+
+.hero-vignette-sides {
+  background: linear-gradient(
+    90deg,
+    #0a0d14 0%,
+    rgba(10, 13, 20, 0.8) 30%,
+    rgba(10, 13, 20, 0.1) 70%,
+    rgba(10, 13, 20, 0.6) 100%
+  );
+}

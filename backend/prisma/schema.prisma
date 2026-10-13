@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PlanInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum PlanTier {
+  FREE
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum AssetStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum ViewingEventType {
+  START
+  HEARTBEAT
+  PAUSE
+  SEEK
+  COMPLETE
+}
+
+model User {
+  id            String             @id @default(uuid())
+  email         String             @unique
+  passwordHash  String
+  name          String
+  role          Role               @default(USER)
+  avatarUrl     String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  refreshTokens    RefreshToken[]
+  subscriptions    Subscription[]
+  payments         Payment[]
+  watchlist        WatchlistItem[]
+  playbackProgress PlaybackProgress[]
+  playbackSessions PlaybackSession[]
+  viewingEvents    ViewingEvent[]
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model SubscriptionPlan {
+  id              String         @id @default(uuid())
+  name            String
+  slug            String         @unique
+  description     String
+  priceCents      Int
+  currency        String         @default("USD")
+  billingInterval PlanInterval   @default(MONTHLY)
+  maxResolution   String         @default("1080p")
+  maxScreens      Int            @default(2)
+  tierLevel       Int            @default(1)
+  tierName        PlanTier       @default(BASIC)
+  features        String         // JSON array or newline separated
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               SubscriptionPlan   @relation(fields: [planId], references: [id])
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  payments           Payment[]
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId        String?
+  subscription          Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  amountCents           Int
+  currency              String        @default("USD")
+  status                PaymentStatus @default(PENDING)
+  paymentMethod         String
+  idempotencyKey        String?       @unique
+  externalTransactionId String?       @unique
+  failureReason         String?
+  createdAt             DateTime      @default(now())
+
+  @@index([userId])
+  @@index([idempotencyKey])
+}
+
+model Genre {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  slug        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+
+  videos      VideoGenre[]
+}
+
+model Video {
+  id              String             @id @default(uuid())
+  title           String
+  slug            String             @unique
+  description     String
+  posterUrl       String
+  thumbnailUrl    String
+  trailerUrl      String?
+  videoUrl        String
+  hlsManifestUrl  String?
+  durationSeconds Int
+  releaseYear     Int
+  maturityRating  String             @default("PG-13")
+  isFeatured      Boolean            @default(false)
+  isTrending      Boolean            @default(false)
+  viewCount       Int                @default(0)
+  rating          Float              @default(8.5)
+  director        String?
+  cast            String?
+  minimumPlanTier PlanTier           @default(FREE)
+  isPublished     Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  genres          VideoGenre[]
+  mediaAssets     MediaAsset[]
+  watchlistItems  WatchlistItem[]
+  playbackProgress PlaybackProgress[]
+  playbackSessions PlaybackSession[]
+  viewingEvents   ViewingEvent[]
+
+  @@index([title])
+  @@index([releaseYear])
+  @@index([isFeatured])
+  @@index([isTrending])
+}
+
+model VideoGenre {
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  genreId String
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, genreId])
+  @@index([genreId])
+}
+
+model MediaAsset {
+  id         String      @id @default(uuid())
+  videoId    String
+  video      Video       @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  quality    String      // e.g. 480p, 720p, 1080p, 4K
+  format     String      // mp4, hls
+  url        String
+  sizeBytes  BigInt?
+  status     AssetStatus @default(READY)
+  createdAt  DateTime    @default(now())
+
+  @@index([videoId])
+}
+
+model WatchlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([userId])
+}
+
+model PlaybackProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId         String
+  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  positionSeconds Float    @default(0)
+  durationSeconds Float    @default(0)
+  completed       Boolean  @default(false)
+  lastWatchedAt   DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@index([userId, videoId])
+}
+
+model PlaybackSession {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId        String
+  video          Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  sessionToken   String    @unique
+  ipAddress      String?
+  userAgent      String?
+  startedAt      DateTime  @default(now())
+  expiresAt      DateTime
+  lastHeartbeatAt DateTime @default(now())
+  isActive       Boolean   @default(true)
+
+  @@index([sessionToken])
+  @@index([userId, videoId])
+}
+
+model ViewingEvent {
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId         String
+  video           Video            @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  eventType       ViewingEventType
+  positionSeconds Float
+  metadata        String?
+  createdAt       DateTime         @default(now())
+
+  @@index([userId, videoId])
+}

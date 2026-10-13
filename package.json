@@ -1,0 +1,17 @@
+{
+  "name": "streamsphere",
+  "version": "1.0.0",
+  "description": "StreamSphere — Full-Stack OTT Video Streaming & Subscription Platform",
+  "scripts": {
+    "start:backend": "npm --prefix backend run dev",
+    "start:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend run test",
+    "prisma:seed": "npm --prefix backend run prisma:seed",
+    "docker:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infrastructure/docker-compose.yml down"
+  },
+  "keywords": ["ott", "video-streaming", "hls", "subscription", "react", "express", "prisma", "postgresql"],
+  "author": "StreamSphere Engineering",
+  "license": "MIT"
+}
